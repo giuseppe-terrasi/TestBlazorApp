@@ -1,0 +1,47 @@
+﻿@using System.Collections.Concurrent;
+@implements IDisposable
+@inject INotificationService NotificationService
+
+@rendermode InteractiveServer
+
+@if (_isLoading)
+{
+    <div class="w-100 spinner">
+    </div>
+    <div class="spinner-border" role="status">
+        <span class="sr-only"></span>
+    </div>
+}
+
+
+@code {
+
+    private bool _isLoading;
+
+    private ConcurrentStack<bool> _loadingStack = new();
+
+    public void Dispose()
+    {
+        NotificationService.LoadingStateChanged -= Update;
+    }
+
+    protected override void OnInitialized()
+    {
+        NotificationService.LoadingStateChanged += Update;
+    }
+
+    async void Update(object sender, bool isLoading)
+    {
+        if (isLoading)
+        {
+            _loadingStack.Push(isLoading);
+        }
+        else
+        {
+            _loadingStack.TryPop(out var result);
+        }
+
+        _isLoading = _loadingStack.Any();
+        await InvokeAsync(StateHasChanged);
+    }
+}
